@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Generate"
+  short_description: "Generate evidence-grounded task docs"
+  default_prompt: "Use $task-generate to analyze this workspace area and write a staged, evidence-grounded task document with review gates and task refinement."
