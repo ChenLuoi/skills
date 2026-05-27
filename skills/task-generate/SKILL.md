@@ -3,7 +3,7 @@ name: task-generate
 description: Generate or revise standalone, self-explanatory, evidence-grounded task documents for planning, review, and task-list refinement. Use when the user explicitly asks to create, write, update, revise, or refine a task document or implementation plan. Do not use for executing tasks, reporting task status, or auditing completion of an existing task document unless the user explicitly invokes `$task-generate`. Use `task/*.md` only when the user or workspace guidance establishes that location. Inspect real workspace evidence before writing.
 metadata:
   short-description: Generate evidence-grounded task docs
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 # Task Generate
@@ -55,21 +55,15 @@ Use this routing table before selecting a template or editing files. It summariz
 
 ## Execution Intent
 
-Apply these detailed intent rules after the routing summary and before acting:
+Use the routing table as the default behavior and apply these additions:
 
-- Planning or document generation: inspect workspace evidence and write or update the task document. If the plan or tasks are not final, produce an intermediate non-executable document. Do not change implementation artifacts unless the user also asks for implementation.
-- Draft review and plan finalization: when the user reviews, challenges, or changes a generated task document, update the intermediate document's requirements, communication decisions, current-state analysis, plan, and coarse task list until the plan is settled. Do not prematurely over-detail the task list before the plan is accepted.
-- Task-list refinement: after the plan is explicitly accepted and every user-confirmation or clarification item has been resolved, inspect the actual workspace evidence again and turn the intermediate document into a final executable document with concrete task entry points, blockers, acceptance criteria, verification, and progress fields. A user request for refinement counts only when it clearly confirms the current plan or points to an already accepted plan; it does not override unresolved confirmation questions.
-- Executing tasks from a task document: implement the requested tasks first, then update the task document with real status, completion notes, verification, deviations, and next work.
-- Progress-only update: do not change implementation artifacts. Update the task document from supplied evidence and workspace inspection; clearly mark unverifiable claims.
-- Task status output: read the task document and relevant current workspace evidence, then list every task title and status so the user can directly choose what to execute next. Mark stale, inconsistent, or unverifiable statuses explicitly.
-- Task completion audit: usually after all tasks appear complete, inspect the task document and actual workspace state, list missing work, incorrect completion, deviations, errors, and optimization items, then wait for user confirmation before writing the audit record or appending new tasks.
-- Reviewing or improving a task document, template, or skill: when the user asks to analyze, review, discuss, evaluate, or suggest optimizations, default to reporting findings, tradeoffs, and proposed rule changes without editing files.
-- Applying document, template, or skill changes: edit files only when the user explicitly asks to modify, apply, update, land, or directly change files, or after the user confirms a proposed change set. If the user asks for both analysis and modification, give a concise modification plan first, then make the edits.
-
-For skill changes, protect the Foundational Contract above before all other cleanup goals. Never optimize this skill in a way that makes generated task documents depend on this skill, chat history, hidden context, or unresolved options.
-
-If intent is ambiguous, choose the least destructive interpretation that satisfies the request and state the assumption briefly.
+- Planning and document generation may write or update only the task document; do not change implementation artifacts unless the user also asks for implementation.
+- Draft review updates the intermediate document until requirements, scope, rejected alternatives, and target plan are settled. Do not over-detail executable tasks before explicit plan acceptance.
+- Task-list refinement requires explicit plan acceptance, resolved user-confirmation items, refreshed evidence, concrete task entry points, blockers, acceptance criteria, verification, and progress fields.
+- Execution means implement first, run required verification when possible, then update real task status, completion notes, verification, deviations, and next work. Progress-only requests do not change implementation artifacts.
+- Analysis, review, and improvement requests default to findings and proposed changes without edits unless the user explicitly asks to modify, apply, update, or confirms a change set.
+- For skill changes, protect the Foundational Contract before cleanup. Never optimize in a way that makes generated final documents depend on this skill, chat history, hidden context, or unresolved options.
+- If intent is ambiguous, choose the least destructive interpretation that satisfies the request and state the assumption briefly.
 
 ## Ambiguity And Confirmation Rules
 
@@ -127,86 +121,72 @@ The selected template defines the required skeleton. Adapt headings to the works
 
 ## Document Mode Selection
 
-Choose the mode before writing. If the user does not name a mode, infer the narrowest mode that satisfies the request.
+Choose the narrowest mode that satisfies the request. If the user names a mode, still verify that it fits the inspected evidence.
 
-- `analysis-plan`: explain current state, gaps, options, and a task list. Use when the user mainly asks for analysis or best-practice guidance.
-- `implementation-plan`: define the concrete implementation path, ownership boundaries, acceptance criteria, and verification. Use for most development task documents.
-- `redesign-plan`: define replacement architecture and stop-extending boundaries. Use only when the user asks for redesign, replacement, architecture overhaul, or when evidence inspection shows the current shape should not be extended.
-- `debug-plan`: define reproduction, evidence collection, hypotheses, fixes, and regression checks. Use for bug, replay, incident, diagnostic, or troubleshooting tasks.
-- `migration-plan`: define old and new contracts, cutover, data handling, compatibility, rollback, and verification. Use for schema, API, configuration, provider, dependency, or storage migrations.
-- `testing-plan`: define test scope, test layers, missing coverage, fixtures, regression matrix, and pass criteria. Use when the task is primarily about validation.
-- `operations-plan`: define runtime procedures, observability, alerting, deployment, rollback, and operator workflows. Use for operational work.
-- `progress-update`: update an existing task document after implementation work. Do the implementation first unless the user explicitly asks only to update the document.
+| Mode | Use when | Minimum content |
+| --- | --- | --- |
+| `analysis-plan` | Current-state analysis, gaps, options, or best-practice guidance | current state, gaps, options considered, selected direction, sequenced task list |
+| `implementation-plan` | Ordinary development task documents | ownership boundaries, entry points, expected result, acceptance criteria, required verification |
+| `redesign-plan` | User asks for redesign/replacement/architecture overhaul, or evidence shows the current structure should stop being extended | replacement ownership, stop-extending boundaries, rejected alternatives, migration or cleanup tasks when needed |
+| `debug-plan` | Bug, replay, incident, diagnostic, or troubleshooting work | symptoms, reproduction path, evidence to collect, hypotheses, fix strategy, regression checks |
+| `migration-plan` | Schema, API, config, provider, dependency, storage, or compatibility migration | old contract, new contract, compatibility rules, cutover, rollback, data handling, verification |
+| `testing-plan` | Validation is the primary task | test layers, fixtures, missing coverage, regression matrix, pass/fail criteria |
+| `operations-plan` | Runtime or operator procedures | runtime procedure, observability, alerting, rollback, manual operator workflow, failure handling |
+| `progress-update` | Existing task document after implementation work | actual completion, real verification, deviations, blockers, next task; implement first unless the user asks only to update the document |
 
-Do not force every task into a redesign shape. Redesign-specific sections such as "legacy structures that must stop expanding" and "replacement boundaries" are required for `redesign-plan`, but should be concise or omitted for ordinary implementation, debug, testing, or operations plans when they do not apply.
+Do not inflate ordinary implementation, debug, testing, or operations plans with redesign-only sections. Large files, duplication, missing tests, or doc/code drift are risk signals, but they do not justify `redesign-plan` unless the user requests systemic redesign or evidence shows the current structure should stop being extended.
 
-Calibrate complexity before selecting `redesign-plan` or locking in specific technology choices. Large files, duplicated logic, missing tests, or drift between docs and code are evidence of risk, but they do not automatically justify a redesign. Use `redesign-plan` only when the user asks for systemic redesign, replacement, architecture overhaul, or when inspected evidence shows an existing structure should stop being extended. Otherwise, prefer the narrowest mode that can still produce an executable, self-contained plan.
-
-Do not turn an observed best-practice improvement into a fixed implementation choice unless it is supported by user confirmation, workspace guidance, current project direction, or concrete evidence. New dependencies, parser frameworks, interaction models, storage formats, platform-support decisions, cleanup/removal choices, and compatibility changes must be recorded as confirmed decisions, explicitly rejected alternatives, objective blockers, or pending confirmations before they appear in an executable task list.
-
-Mode-specific minimums:
-
-- `analysis-plan`: include current state, gaps, options considered, selected direction, and a sequenced task list.
-- `implementation-plan`: include ownership boundaries, entry points, expected result, acceptance criteria, and required verification.
-- `redesign-plan`: include replacement ownership, stop-extending boundaries, rejected alternatives, and migration or cleanup tasks when needed.
-- `debug-plan`: include symptoms, reproduction path, evidence to collect, hypotheses, fix strategy, and regression checks.
-- `migration-plan`: include old contract, new contract, compatibility rules, cutover, rollback, data handling, and verification.
-- `testing-plan`: include test layers, fixtures, missing coverage, regression matrix, and pass/fail criteria.
-- `operations-plan`: include runtime procedure, observability, alerting, rollback, manual operator workflow, and failure handling.
-- `progress-update`: include actual completion, real verification, deviations from the plan, blockers, and next task.
+Do not turn a best-practice improvement into a fixed implementation choice unless supported by user confirmation, workspace guidance, current project direction, or concrete evidence. New dependencies, parser frameworks, interaction models, storage formats, platform decisions, cleanup/removal choices, and compatibility changes must be recorded as confirmed decisions, rejected alternatives, objective blockers, or pending confirmations before they appear in an executable task list.
 
 ## Document Lifecycle
 
-Generate and maintain task documents through these lifecycle stages. Intermediate documents record stage and task-list maturity because the skill is still driving them. Final executable documents use compact execution-control fields instead of exposing the full draft/review lifecycle.
+Generate and maintain documents through this lifecycle. Intermediate documents expose stage and task-list maturity because the skill still drives them; final executable documents use compact execution-control fields instead.
 
-Document stages:
+| Stage | Meaning |
+| --- | --- |
+| `Draft` | intermediate, non-executable requirements/current-state/target-plan document with a coarse task list |
+| `Under review` | intermediate document being discussed, challenged, or revised |
+| `Plan accepted` | intermediate document with settled requirements, scope, and target plan, still awaiting task refinement |
+| `Tasks refined` | final executable authority; tasks are checked against current evidence and executable |
+| `In execution` | at least one task has started |
+| `Completion audit` | tasks appear complete and workspace state is being checked |
+| `Complete` | implementation, required verification, document updates, and accepted audit follow-up are complete |
 
-- `Draft`: an intermediate non-executable document has requirements, current-state analysis, target plan, and a coarse task list for user review.
-- `Under review`: an intermediate non-executable document is being discussed, challenged, or revised.
-- `Plan accepted`: an intermediate non-executable document has settled requirements, scope, and target plan, but still needs task-list refinement before execution.
-- `Tasks refined`: the document has been finalized as an executable execution authority; the task list has been checked against current workspace evidence and is executable.
-- `In execution`: at least one task has started.
-- `Completion audit`: tasks appear complete and the document is being checked against actual workspace state.
-- `Complete`: implementation, required verification, document updates, and any accepted audit follow-up are complete.
+| Task-list maturity | Meaning |
+| --- | --- |
+| `Coarse` | non-executable high-level grouping for plan review; plausible, ordered, and evidence-aware |
+| `Needs refinement` | plan mostly settled, but tasks still need grounded entry points, blockers, acceptance criteria, and verification |
+| `Executable` | final executable state usable with only the task document and current workspace evidence |
+| `Execution-maintained` | task records are updated after real implementation, verification, deviations, and progress changes |
 
-Task-list maturity:
+Lifecycle gates:
 
-- `Coarse`: non-executable high-level task grouping for plan review. Tasks must be plausible, ordered, and evidence-aware, but they do not need full implementation detail.
-- `Needs refinement`: non-executable state where the plan is mostly settled, but tasks still need workspace-grounded entry points, blockers, acceptance criteria, and verification detail before execution.
-- `Executable`: final executable state where tasks are sufficiently detailed for future execution with only the task document and current workspace evidence.
-- `Execution-maintained`: tasks are being updated after real implementation, verification, deviations, and progress changes.
-
-Lifecycle workflow:
-
-1. Requirements understanding: identify the user's goal, target subsystem, expected output file, language, desired document mode, and whether the user expects review, execution, status output, or completion audit. If the requirement is ambiguous, broad, internally inconsistent, or missing a decision needed for useful analysis, ask the user for clarification before moving on.
-2. Current-state analysis: read workspace guidance first, then inspect relevant code, docs, config, command output, process files, or user-provided evidence. Separate observed facts, inferences, and design decisions.
-3. Clarification gate: after evidence inspection, decide whether requirements, blockers, conflicts, missing permissions, missing environment, or unclear product choices require user confirmation. If they do, present the blocker or decision questions and wait. If not, continue.
-4. Draft document output: use the intermediate template to prepare a non-executable document with background, goals, user requirements and communication decisions, evidence, current-state analysis, target plan, conclusion, and a coarse task list that fits the actual workspace. Write it only after a destination path is provided, established by workspace guidance, or confirmed by the user. Set document stage to `Draft`, task-list maturity to `Coarse`, and execution authority to non-executable unless the user explicitly asked for fully executable tasks in one pass, the request itself clearly confirms requirements, scope, and target plan, no review gate is needed, and no confirmation or clarification item remains. If unresolved confirmation items exist, record them in the document and immediately present the pending-decision list to the user; do not proceed to executable tasks.
-5. Document discussion and plan finalization: when the user reviews the draft, update the document through discussion until requirements, scope, rejected alternatives, and target plan are settled. Keep the document update history and communication decisions current. Do not mark the plan accepted until the user explicitly confirms it.
-6. Task-list refinement: after the plan is explicitly accepted, first eliminate all unresolved user-confirmation exceptions, requirement clarification items, open product decisions, unresolved plan review questions, and user-input blockers. If any remain, refuse refinement for now, show the pending-decision list to the user, keep the document non-executable, and stop before task refinement. If none remain, state that no pending user decisions remain, re-check relevant workspace evidence, and refine the task list into executable tasks. Only after every task has concrete entry points, affected scope, blockers, acceptance criteria, required verification, and document-update requirements, run the Final Executable Cleanup Pass below and convert the document to the executable template.
-   During refinement, also run a scope-decision pass: identify every candidate improvement, cleanup, migration, compatibility choice, removal, preservation rule, and test/verification expansion raised by the evidence or prior discussion. Assign each item to "included now", "explicitly not included", "objective blocker", or "pending user decision". Do not finalize the document while any item remains as "maybe", "optional", "recommended", or equivalent suggestion wording.
-7. Final self-check: inspect the document using the Final Self-Check Rules below. Report issues to the user and update the document when confirmed or directly requested.
-8. User final confirmation: after the user confirms the final executable document, treat that document as the execution authority for future implementation, status reporting, completion audits, and progress updates.
+1. Understand goal, subsystem, output path, language, mode, and whether the user expects review, execution, status, or audit; clarify before moving on when the requirement is ambiguous or missing a material decision.
+2. Read workspace guidance first, inspect relevant evidence, and separate observed facts, inferences, and design decisions.
+3. After evidence inspection, stop for user confirmation when requirements, blockers, conflicts, permissions, environment, or product choices would materially change the plan.
+4. Draft with the intermediate template unless the one-pass executable gate is satisfied: user explicitly requested execution-ready output, requirements/scope/target plan are clear, no review gate is needed, and no confirmation item remains. Write only after the path is provided or established.
+5. During review, update requirements, scope, rejected alternatives, communication decisions, history, and target plan; do not mark `Plan accepted` without explicit user confirmation.
+6. Before task refinement, refuse refinement while unresolved user-confirmation, clarification, product-decision, plan-review, or user-input blockers remain. If none remain, state that no pending user decisions remain, refresh evidence, run the scope-decision pass, refine executable tasks, run the Final Executable Cleanup Pass, then convert to the executable template.
+7. During the scope-decision pass, classify every candidate improvement, cleanup, migration, compatibility choice, removal, preservation rule, and test expansion as included now, explicitly not included, objective blocker, or pending user decision. Do not finalize while any item remains optional or undecided.
+8. Run Final Self-Check before asking for final user confirmation. After the user confirms the final executable document, treat it as the authority for future implementation, status reporting, completion audits, and progress updates.
 
 ## Core Workflow
 
 For document generation or refinement, follow the lifecycle above and this concrete sequence:
 
-1. Identify the target subsystem, user goal, document mode, expected output file, output language, and whether the document will be used for later progress management.
-2. Read workspace guidance first. Check `AGENTS.md`, `CLAUDE.md`, `README*`, `docs/`, and any files the user mentions. Do not assume a `task/` directory or existing task documents are present.
-3. Select exactly one output template from `references/` based on the requested language and document shape.
-4. Inspect relevant evidence and code paths before designing. Use fast search and targeted file reads; do not rely on memory or generic architecture assumptions.
-5. Separate facts, inferences, and design decisions. Keep facts tied to concrete files, tests, docs, commands, or observed behavior.
-6. Stop for user clarification if evidence reveals blockers, unresolved product choices, conflicting requirements, or missing information that would materially change the plan. When this happens during creation of a document that could otherwise be executable, write only an intermediate non-executable document and present the confirmation items to the user. Continue presenting the pending-decision list in every later response about the document until the items are resolved.
-7. Fix the task scope, non-goals, and evidence baseline before expanding the task list.
-8. Design the target plan using the selected mode and the workspace's actual constraints.
-9. Prepare document content using the selected shape: intermediate documents may keep clarification and review context; executable documents keep only settled requirements, confirmed decisions, explicit in-scope and out-of-scope decisions, execution-relevant evidence, target plan, global operating rules, and refined tasks.
-10. Write the prepared document to the requested path only after the path is provided or established. If no path is given and a task document is clearly needed, use workspace guidance when it defines a task-document location; otherwise propose a sensible Markdown file path in the current workspace and ask the user to confirm before creating the file. Do not infer that `task/` exists unless the user or workspace guidance establishes it.
-11. If the user says the document should be self-contained or the sole implementation guide, absorb required context from explicitly relevant prior docs and resolve open options into fixed rules.
+1. Identify target subsystem, user goal, mode, output file, language, and whether later progress management is expected.
+2. Read workspace guidance first: `AGENTS.md`, `CLAUDE.md`, `README*`, `docs/`, and named files. Do not assume a `task/` directory or existing task documents.
+3. Select exactly one output template from `references/` by language and document shape.
+4. Inspect relevant evidence and code paths before designing; use fast search and targeted reads, not memory or generic assumptions.
+5. Separate facts, inferences, and design decisions, tying facts to concrete files, tests, docs, commands, or observed behavior.
+6. Stop for clarification when evidence reveals blockers, unresolved product choices, conflicts, or missing information that would materially change the plan. In that case, write only an intermediate non-executable document and keep presenting pending decisions until resolved.
+7. Fix scope, non-goals, and evidence baseline before expanding tasks; then design the target plan from the selected mode and actual workspace constraints.
+8. Prepare content by shape: intermediate documents may keep clarification/review context; executable documents keep only settled requirements, confirmed decisions, scope decisions, execution-relevant evidence, target plan, global operating rules, and refined tasks.
+9. Write only after the path is provided or established. If no path is given, use workspace guidance when it defines one; otherwise propose a Markdown path and ask for confirmation. If the user wants a self-contained sole guide, absorb required context from relevant prior docs and resolve open options into fixed rules.
 
-Inspect existing task documents only when the user names them, an existing document is the update target, or workspace guidance such as `AGENTS.md` explicitly says task documents are part of the project workflow. When inspecting them, read only documents that overlap with the current target based on path, title, or focused keyword search.
+Inspect existing task documents only when the user names them, one is the update target, or workspace guidance says task documents are part of the workflow. Read only overlapping documents based on path, title, or focused keyword search.
 
-Do not skip evidence reading. For code tasks, inspect the relevant code. For non-code tasks, inspect the relevant docs, configs, command output, process files, or user-provided evidence. The document must be anchored in the actual workspace.
+Never skip evidence reading: inspect relevant code for code tasks, and inspect relevant docs, configs, command output, process files, or user-provided evidence for non-code tasks.
 
 ## Workspace Analysis Requirements
 
@@ -287,11 +267,13 @@ Intermediate non-executable documents must also include:
 - a prominent non-executable notice stating that no task may be executed from the document
 - original user goal, requirement clarification record, plan review record, and pending user-decision details when they are needed for review
 - unresolved confirmation, clarification, evidence, or refinement items with concrete questions, why each item blocks refinement or execution, options when known, affected scope, and required user response
+- a non-executable stage draft for large or high-risk plans when it helps review the intended development sequence; stage drafts must not define executable checkpoints or completion commands
 - only coarse or needs-refinement tasks; do not include execution operations, completion-audit rules, full executable-task maintenance rules, or final-document self-check content
 
 Final executable documents must also include:
 
 - compact execution control fields: execution authority, current status, status note, overall progress, next task, evidence baseline, inspected scope, and stale-plan triggers
+- checkpoint fields and a checkpoint map when a final executable task list has more than ten tasks, the user requests staged execution, or the context risk is high enough that staged progress control would reduce execution ambiguity; checkpoint maps must include prerequisites, contiguous task ranges, completion conditions, required verification, and status
 - execution and maintenance contract: how future executors implement tasks, output task status, perform completion audits, and update progress without loading this skill
 - decision summary: confirmed requirements, implementation constraints, still-effective rejected alternatives, and `pending confirmations: none`; do not keep resolved confirmation tables or review timelines
 - scope decisions: what is included in the current plan, what is explicitly not included, and which candidate alternatives were rejected; final documents must not leave unresolved optional branches
@@ -321,6 +303,8 @@ When creating a new task document:
 - For one-pass executable documents, use the executable template only when the user explicitly requested execution-ready output, the request itself clearly confirms requirements, scope, and target plan, and no unresolved review, clarification, or user-confirmation gate remains.
 - If pending user-decision count is greater than zero, the next task must be user confirmation.
 - Set next task according to lifecycle stage unless pending user decisions remain: user document review for `Draft` or `Under review`, task-list refinement for `Plan accepted`, the first executable task for `Tasks refined` or `In execution`, completion audit for `Completion audit`, `None` for `Complete`, the blocking item when blocked, or user confirmation when pending decisions remain.
+- Calculate overall progress deterministically from task progress. Use task-size weights `S=1`, `M=2`, and `L=3`; compute `round(sum(task_weight * task_progress_percent) / sum(task_weight))`. Exclude tasks marked `Won't do` / `不再执行` from the denominator only after the reason is recorded. If no executable task remains, use `100%` only when the top-level status is `Complete` / `已完成`; otherwise use `0%`.
+- For executable documents with more than ten tasks, user-requested staged execution, or high context risk, define sequential checkpoints `C1`, `C2`, `C3`, and so on. Each checkpoint must cover a contiguous task range, name the development stage it completes, specify prerequisites, specify its completion condition, and name the required verification at that boundary. Write prerequisites as `None (independent)` / `无（可独立执行）` only when the checkpoint does not depend on earlier unfinished work. Small documents may write checkpoint fields as `None` / `无` unless the user asks for checkpoints.
 - Add status, progress, actual completion, verification, and notes fields to every task. Coarse tasks should not include execution-only fields such as concrete implementation entry points or acceptance criteria until task-list refinement.
 - Write the top-level current status using only the allowed status scale. Put explanatory prose in a separate status note or equivalent field in the document template.
 
@@ -351,6 +335,7 @@ When updating an existing task document after implementation work, do the actual
 
 - top-level current status, overall progress, and next task
 - top-level status note when the template includes one
+- current checkpoint, next checkpoint, and checkpoint status when the document defines checkpoints
 - affected task status and progress
 - actual completion notes
 - verification commands and results that really ran
@@ -365,12 +350,24 @@ When executing a specified task from a task document:
 - If the task is blocked by an unfinished prerequisite, missing decision, missing environment, or stale plan, report the blocker to the user and update the document if requested or confirmed. Do not silently bypass the blocker.
 - If the task is executable, implement it, run the required verification when possible, and update actual completion, verification records, progress, deviations, current status, status note when present, next task, and document update history.
 
+When interpreting completion requests against an executable task document, support these completion targets:
+
+| Completion target | User wording | Execution scope | Stop condition |
+| --- | --- | --- | --- |
+| Specified task | `complete task X`, `finish task X`, `完成任务 X`, `完成任务X` | Execute only that task number after checking blockers, previous-task requirements, and current evidence | Stop when prior incomplete work blocks the task |
+| Exact checkpoint | `complete C1`, `finish C1`, `完成C1`, `完成 C1` | Execute every unfinished task assigned to that checkpoint only, in task order | Stop when checkpoint prerequisites or earlier prerequisite checkpoints remain incomplete, unless the document explicitly marks the checkpoint independent |
+| Through-checkpoint | `complete through C2`, `finish up to C2`, `完成到C2`, `完成到 C2` | Execute every unfinished task from the current state through the end of the target checkpoint, including earlier checkpoints | Stop at the first unresolved blocker, failed required verification, or stale-plan trigger |
+| One-shot all | `complete all`, `finish all`, `全部完成`, `一次性完成` | Execute every unfinished executable task in order through the final checkpoint or final audit | Stop at the first unresolved blocker, failed required verification, or stale-plan trigger |
+
+After checkpoint-target or one-shot execution, update task statuses, checkpoint status, current checkpoint, next checkpoint, current status, overall progress, next task, verification records, and document update history. Do not mark a checkpoint complete until every task in its range satisfies its completion condition and required checkpoint verification has been recorded or explicitly marked not run with a valid reason.
+
 When producing a task status output:
 
+- If the document defines checkpoints, list checkpoint ID, covered tasks, checkpoint status, blockers, and next action before the task table.
 - List every task number, title, and status.
 - Compare the document with current workspace evidence when needed; mark stale, inconsistent, or unverifiable statuses explicitly.
 - Include the next sensible task or blocker so the user can directly choose what to execute next.
-- Prefer this status table shape: task number, task title, document status, actual status judgment, blockers, next action.
+- Prefer this status table shape: task number, checkpoint, task title, document status, actual status judgment, blockers, next action.
 
 When performing a completion audit:
 
@@ -385,6 +382,7 @@ Use this as the document readiness gate. Do not paste this checklist into genera
 
 Before asking for final user confirmation or treating a task document as execution-ready, check all of these:
 
+- intent and file-output boundary: the selected template matches language and document shape, the document mode and mode reason are stated, and files are written only when a path was provided or established
 - requirement coverage: every explicit user goal, non-goal, constraint, and communication decision is reflected
 - evidence coverage: core conclusions trace to inspected code, docs, config, commands, or user requirements
 - record relevance: recorded history, decisions, audit notes, and progress notes directly support requirement validation, implementation correctness, verification, or user confirmation
@@ -397,6 +395,7 @@ Before asking for final user confirmation or treating a task document as executi
 - pending-decision reminder: initial draft responses and every subsequent response about a non-executable document list pending user decisions; refinement requests are refused while any pending decision remains
 - refinement atomicity: document-level stage, maturity, status, next task, task format summary, final conclusion, and update history were finalized after all individual tasks were refined, not before
 - execution operations: specified-task execution, task status output, and completion audit rules are present only in final executable documents
+- completion-target operations: final executable documents define how to interpret specified-task execution, exact-checkpoint execution, through-checkpoint execution, and one-shot all-unfinished execution; intermediate documents do not contain these execution operations
 - generation-knowledge cleanup: final executable documents do not contain original-goal restatements, clarification timelines, plan review timelines, resolved confirmation tables, `CONF-*` details, skill-assisted next actions, refinement gates, "current task format" labels, coarse-task format instructions, or final self-check checklists
 - audit readiness: final executable documents have a dedicated completion audit records section and rules for user confirmation before appending follow-up tasks
 - workspace guidance: project guidance, naming conventions, forbidden approaches, and required verification are reflected
@@ -407,6 +406,8 @@ Before asking for final user confirmation or treating a task document as executi
 - task distribution quality: the final task sequence covers the required path from baseline or known starting state to final audit, prioritizes real failing gates and user-facing or release risks before cosmetic cleanup, and does not skip a high-risk phase without a scope or evidence reason.
 - task boundary quality: each executable task has one primary outcome, can record actual completion and verification independently, and does not mix behavior change, broad refactor, performance optimization, cleanup, and documentation unless those are inseparable and the task boundary explains why.
 - verification proportionality: global verification rules define task-type triggers, task-level checkpoints name the checks actually required for that task, and the final audit task or final checkpoint covers full verification or explains why it is not applicable.
+- checkpoint consistency: large executable plans with more than ten tasks, staged-execution requirements, or high context risk define `C1`, `C2`, `C3`, and later checkpoints as contiguous ordered task ranges, and each detailed task has exactly one matching checkpoint assignment or an explicit `None` / `无` when checkpoints do not apply.
+- progress consistency: top-level overall progress follows the documented weighted task-size formula, checkpoint status follows the tasks and verification in that checkpoint, and cancelled tasks are excluded from progress only when the reason is recorded.
 
 ## Design Stance
 
@@ -472,14 +473,17 @@ The task list must follow these rules:
 11. Put shared banned approaches, execution requirements, verification requirements, and document-update rules in global sections of the final executable document. In individual executable tasks, write "inherits global rules" plus only task-specific additions when no special rule is needed.
 12. During task-list refinement, cross-check every implementation entry point, affected file, and verification command against the inspected evidence baseline. Existing files or commands must have been inspected; planned new files or commands must be explicitly marked as new.
 13. Executable tasks must not contain alternative implementation branches. If a task mentions a candidate action, it must say whether that action is included in the task, excluded from the task, or blocked by a concrete prerequisite. If the choice needs user judgment, move it to pending confirmations and keep the document non-executable.
-14. Final executable task lists should start with a compact task overview table before detailed task entries when there are more than three tasks. The overview should show task number, title, priority, size, risk, phase, and main verification so executors can see the whole path at once.
-15. Use task phases as a planning aid, not as bureaucracy. Suggested phases are baseline, user/release boundary, shared foundation, core implementation, testing/verification, and documentation/audit. If a different set fits the selected mode better, use that set consistently.
-16. Each executable task should have one primary outcome. Split a task when it combines independently verifiable behavior changes, structural refactors, performance optimization, cleanup, documentation, or release changes.
-17. A task may combine multiple kinds of work only when they are inseparable for correctness or verification. When combining them, the task boundary decision must say why they belong together.
-18. Each task must have a clear post-task workspace state: core checks pass, a temporary red state is explicitly allowed with named failing checks and a restoring task, or the task remains blocked.
-19. Global verification rules should define which task types trigger which verification families, such as code, release/package, CLI/UI behavior, data safety, migration, performance, documentation, or operations. Task-level verification checkpoints should be specific instead of mechanically copying every global command.
-20. Include a final audit task by default for multi-task executable documents. Very small plans may fold the audit into the last task only when that task's acceptance criteria explicitly covers final verification, stale-document cleanup, and completion status.
-21. The task list must demonstrate final-goal coverage. Do not write a set of local improvements that lacks an explicit path to the user's requested end state and the verification that proves it.
+14. Final executable task lists should start with a compact task overview table before detailed task entries when there are more than three tasks. The overview should show task number, checkpoint when applicable, title, priority, size, risk, phase, and main verification so executors can see the whole path at once.
+15. For large executable plans with more than ten tasks, user-requested staged execution, or high context risk, add a checkpoint map before the task overview. Number checkpoints as `C1`, `C2`, `C3`, and so on with no gaps. Each checkpoint must cover a contiguous task range, name the development stage it represents, state prerequisites, state the completion condition, name required checkpoint-level verification, and maintain checkpoint status. Mark a checkpoint independent only by writing `None (independent)` / `无（可独立执行）` in prerequisites. Assign every task to exactly one checkpoint. The last checkpoint must include final verification or a completion audit task, unless the document explains why final audit is not applicable.
+16. Do not create checkpoint graphs or overlapping milestone sets. Checkpoints are ordered execution targets, not labels for optional work. If a task belongs to multiple conceptual phases, assign it to the checkpoint where its completion is required for forward progress and explain the dependency in the task boundary.
+17. In intermediate documents, large or risky plans may include a non-executable stage draft before the coarse task list. The stage draft may show intended stage order and review questions, but it must not use `C1`/`C2` checkpoint IDs as executable targets and must not include completion commands.
+18. Use task phases as a planning aid, not as bureaucracy. Suggested phases are baseline, user/release boundary, shared foundation, core implementation, testing/verification, and documentation/audit. If a different set fits the selected mode better, use that set consistently.
+19. Each executable task should have one primary outcome. Split a task when it combines independently verifiable behavior changes, structural refactors, performance optimization, cleanup, documentation, or release changes.
+20. A task may combine multiple kinds of work only when they are inseparable for correctness or verification. When combining them, the task boundary decision must say why they belong together.
+21. Each task must have a clear post-task workspace state: core checks pass, a temporary red state is explicitly allowed with named failing checks and a restoring task, or the task remains blocked.
+22. Global verification rules should define which task types trigger which verification families, such as code, release/package, CLI/UI behavior, data safety, migration, performance, documentation, or operations. Task-level verification checkpoints should be specific instead of mechanically copying every global command.
+23. Include a final audit task by default for multi-task executable documents. Very small plans may fold the audit into the last task only when that task's acceptance criteria explicitly covers final verification, stale-document cleanup, and completion status.
+24. The task list must demonstrate final-goal coverage. Do not write a set of local improvements that lacks an explicit path to the user's requested end state and the verification that proves it.
 
 Use the task template from the selected language and document-shape reference.
 
@@ -508,14 +512,9 @@ Small edits are acceptable only when they belong to a larger meaningful unit.
 
 ## Completion Checklist
 
-Use this as the end-of-turn checklist for this skill run. It intentionally overlaps the Final Self-Check Rules, but it also checks assistant behavior, file-output decisions, template use, and user-facing responses.
+Use this as the final assistant-behavior check after the Final Self-Check Rules:
 
-Before finishing, verify these gates:
-
-- Intent and output: the execution intent is respected; the document mode and mode reason are stated; the selected language template was used or intentionally adapted; the file was written only when a path was provided or established, otherwise path confirmation was requested.
-- Evidence and self-contained context: the design is based on inspected evidence; facts trace to concrete sources; goals, non-goals, requirements, decisions, rejected alternatives, evidence baseline, stale-plan triggers, current state, target plan, risks, and verification strategy are present; the document does not rely on chat history for core meaning.
-- Shape and authority: execution authority matches the document state; intermediate documents expose stage and task-list maturity, stay non-executable, omit execution operations, and name the skill-assisted next action; final executable documents use compact execution-control fields, allowed statuses, progress fields, status/task-size/context-risk definitions, and `pending confirmations: none`.
-- Pending decisions and refinement gates: pending user decisions are listed in responses while unresolved; refinement is refused while any pending item remains; task bodies are refined before document-level metadata claims executable or refined state.
-- Final executable contract: final documents went through the Final Executable Cleanup Pass, contain no generation-stage scaffolding or unresolved placeholders, keep execution rules in a compact control section, include specified-task execution, status output, completion audit operations, and have a dedicated completion audit records section.
-- Task quality: the task list is appended when appropriate, has the right maturity, is ordered for sequential execution, covers the final goal, avoids accidental compatibility work, and each task has status, progress, actual completion, verification, and notes; executable tasks also have concrete entry points, boundaries, blockers, acceptance criteria, verification checkpoints, and no unresolved include/delete/move/keep choices.
-- Maintenance cleanup: update history is initialized or appended; records are relevant rather than process noise; final self-check issues are resolved or reported; stale status prose and optional/recommendation wording are removed from executable, execution-maintained, and completion-audit documents.
+- If a file path was missing, ask for path confirmation instead of writing.
+- If pending decisions remain, list them in the response before suggesting refinement or execution.
+- If final self-check issues remain, report them or update the document when requested/confirmed.
+- Summarize the selected mode, template shape, evidence basis, pending decisions, and verification status in the user response.

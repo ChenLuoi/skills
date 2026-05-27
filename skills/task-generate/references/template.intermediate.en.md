@@ -108,7 +108,15 @@ While any item status is "Needs confirmation", Next task must be "user confirmat
 | --- | --- | --- | --- |
 | YYYY-MM-DD | Created | Initial intermediate task document generated | Not run |
 
-## 8. Coarse Task List
+## 8. Stage Draft (Non-Executable)
+
+Fill this only when the task is large, the user asks for staged review, or context risk is high. When a stage draft does not apply, replace the entire table with "None". This section is only for reviewing development order. Do not use executable checkpoint IDs such as C1 or C2, and do not include commands such as "complete through this stage".
+
+| Stage | Stage goal | Expected coarse tasks covered | Review question |
+| --- | --- | --- | --- |
+| <stage name; write "None" when empty> | <state after this stage is done> | <related coarse task numbers or range> | <question that needs user confirmation or review; write "None" when empty> |
+
+## 9. Coarse Task List
 
 Tasks are only for plan review or later skill-assisted refinement. Do not execute them directly.
 
